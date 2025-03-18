@@ -30,6 +30,7 @@ import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 public class CompanionScanner {
@@ -71,12 +72,16 @@ public class CompanionScanner {
                     if (peripheral != null && scanCallback != null) {
                         scanCallback.invoke(null, peripheral.asWritableMap());
                         scanCallback = null;
-                        bleManager.emitOnCompanionPeripheral(peripheral.asWritableMap());
+                        reactContext
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("onCompanionPeripheral", peripheral.asWritableMap());
                     }
                 } else {
                     scanCallback.invoke(null, null);
                     scanCallback = null;
-                    bleManager.emitOnCompanionPeripheral(null);
+                    reactContext
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("onCompanionPeripheral", null);
                 }
             } else {
                 // No device, user cancelled?
@@ -88,7 +93,9 @@ public class CompanionScanner {
                 scanCallback.invoke(null, peripheral != null ? peripheral.asWritableMap() : null);
                 scanCallback = null;
             }
-            bleManager.emitOnCompanionPeripheral(peripheral != null ? peripheral.asWritableMap() : null);
+            reactContext
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("onCompanionPeripheral", peripheral != null ? peripheral.asWritableMap() : null);
         }
     };
 
@@ -145,7 +152,10 @@ public class CompanionScanner {
 
                 WritableMap map = Arguments.createMap();
                 map.putString("error", charSequence.toString());
-                bleManager.emitOnCompanionFailure(map);
+      
+                reactContext
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("onCompanionFailure", map);
             }
 
             @Override
@@ -166,7 +176,9 @@ public class CompanionScanner {
 
                     WritableMap map = Arguments.createMap();
                     map.putString("error", msg);
-                    bleManager.emitOnCompanionFailure(map);
+                    reactContext
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("onCompanionFailure", map);
                 }
             }
         }, null);

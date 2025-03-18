@@ -27,6 +27,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -184,7 +185,9 @@ public class DefaultScanManager extends ScanManager {
 
                                 WritableMap map = Arguments.createMap();
                                 map.putInt("status", 10);
-                                bleManager.emitOnStopScan(map);
+                                reactContext
+                                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                                        .emit("onStopScan", map);
                             }
                         }
                     });
@@ -221,7 +224,10 @@ public class DefaultScanManager extends ScanManager {
         bleManager.savePeripheral(peripheral);
 
         WritableMap map = peripheral.asWritableMap();
-        bleManager.emitOnDiscoverPeripheral(map);
+
+        reactContext
+                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                .emit("onDiscoverPeripheral", map);
     }
 
     private final ScanCallback mScanCallback = new ScanCallback() {
@@ -256,7 +262,9 @@ public class DefaultScanManager extends ScanManager {
             isScanning = false;
             WritableMap map = Arguments.createMap();
             map.putInt("status", errorCode);
-            bleManager.emitOnStopScan(map);
+            reactContext
+                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit("onStopScan", map);
         }
     };
 

@@ -32,6 +32,7 @@ import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.lang.reflect.Method;
 import java.util.Iterator;
@@ -139,7 +140,9 @@ class BleManager extends NativeBleManagerSpec {
                 WritableMap map = Arguments.createMap();
                 map.putString("state", stringState);
                 Log.d(LOG_TAG, "state: " + stringState);
-                emitOnDidUpdateState(map);
+                reactContext
+                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit("onDidUpdateState", map);
 
             } else if (action.equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED)) {
                 final int bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
@@ -179,12 +182,13 @@ class BleManager extends NativeBleManagerSpec {
                 if (bondState == BluetoothDevice.BOND_BONDED) {
                     Peripheral peripheral;
                     if (!forceLegacy) {
-                        peripheral = new DefaultPeripheral(device, bleManager);
+                        peripheral = new DefaultPeripheral(device, bleManager, reactContext);
                     } else {
-                        peripheral = new Peripheral(device, bleManager);
+                        peripheral = new Peripheral(device, bleManager, reactContext);
                     }
                     WritableMap map = peripheral.asWritableMap();
-                    emitOnPeripheralDidBond(map);
+                    reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit("onPeripheralDidBond", map);
                 }
 
                 if (removeBondRequest != null && removeBondRequest.uuid.equals(device.getAddress())
@@ -366,7 +370,9 @@ class BleManager extends NativeBleManagerSpec {
             scanManager.stopScan(callback);
             WritableMap map = Arguments.createMap();
             map.putInt("status", 0);
-            emitOnStopScan(map);
+            reactContext
+                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit("onScanStopScan", map);
         }
     }
 
@@ -661,9 +667,9 @@ class BleManager extends NativeBleManagerSpec {
             if (!peripherals.containsKey(address)) {
                 Peripheral peripheral;
                 if (!forceLegacy) {
-                    peripheral = new DefaultPeripheral(device, this);
+                    peripheral = new DefaultPeripheral(device, this, reactContext);
                 } else {
-                    peripheral = new Peripheral(device, this);
+                    peripheral = new Peripheral(device, this, reactContext);
                 }
                 peripherals.put(device.getAddress(), peripheral);
             }
@@ -719,7 +725,8 @@ class BleManager extends NativeBleManagerSpec {
         WritableMap map = Arguments.createMap();
         map.putString("state", state);
         Log.d(LOG_TAG, "state:" + state);
-        emitOnDidUpdateState(map);
+        reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit("onDidUpdateState", map);
         callback.invoke(state);
     }
 
@@ -828,9 +835,9 @@ class BleManager extends NativeBleManagerSpec {
         for (BluetoothDevice device : deviceSet) {
             Peripheral peripheral;
             if (!forceLegacy) {
-                peripheral = new DefaultPeripheral(device, this);
+                peripheral = new DefaultPeripheral(device, this, reactContext);
             } else {
-                peripheral = new Peripheral(device, this);
+                peripheral = new Peripheral(device, this, reactContext);
             }
             WritableMap jsonBundle = peripheral.asWritableMap();
             map.pushMap(jsonBundle);
@@ -949,9 +956,9 @@ class BleManager extends NativeBleManagerSpec {
                 if (BluetoothAdapter.checkBluetoothAddress(peripheralUUID)) {
                     BluetoothDevice device = bluetoothAdapter.getRemoteDevice(peripheralUUID);
                     if (!forceLegacy) {
-                        peripheral = new DefaultPeripheral(device, this);
+                        peripheral = new DefaultPeripheral(device, this, reactContext);
                     } else {
-                        peripheral = new Peripheral(device, this);
+                        peripheral = new Peripheral(device, this, reactContext);
                     }
                     peripherals.put(peripheralUUID, peripheral);
                 }

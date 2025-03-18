@@ -29,6 +29,7 @@ import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.modules.core.RCTNativeAppEventEmitter;
 
 import org.json.JSONException;
@@ -80,19 +81,23 @@ public class Peripheral extends BluetoothGattCallback {
     private boolean commandQueueBusy = false;
 
     private List<byte[]> writeQueue = new ArrayList<>();
+    private final ReactContext reactContext;
 
-    public Peripheral(BluetoothDevice device, int advertisingRSSI, byte[] scanRecord, BleManager bleManager) {
+    public Peripheral(BluetoothDevice device, int advertisingRSSI, byte[] scanRecord, BleManager bleManager, ReactContext reactContext) {
         this.device = device;
-        this.bufferedCharacteristics = new ConcurrentHashMap<String, NotifyBufferContainer>();
+        this.bufferedCharacteristics = new ConcurrentHashMap<>();
         this.advertisingRSSI = advertisingRSSI;
         this.advertisingDataBytes = scanRecord;
         this.bleManager = bleManager;
+        this.reactContext = reactContext; // Initialize ReactContext
     }
 
-    public Peripheral(BluetoothDevice device, BleManager bleManager) {
+    // Overload the constructor if needed
+    public Peripheral(BluetoothDevice device, BleManager bleManager, ReactContext reactContext) {
         this.device = device;
-        this.bufferedCharacteristics = new ConcurrentHashMap<String, NotifyBufferContainer>();
+        this.bufferedCharacteristics = new ConcurrentHashMap<>();
         this.bleManager = bleManager;
+        this.reactContext = reactContext; // Initialize ReactContext
     }
 
     private void sendConnectionEvent(BluetoothDevice device, int status) {
@@ -101,7 +106,9 @@ public class Peripheral extends BluetoothGattCallback {
         if (status != -1) {
             map.putInt("status", status);
         }
-        bleManager.emitOnConnectPeripheral(map);
+        reactContext
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("onConnectPeripheral", map);
         Log.d(BleManager.LOG_TAG, "Peripheral connected:" + device.getAddress());
     }
 
@@ -111,7 +118,9 @@ public class Peripheral extends BluetoothGattCallback {
         if (status != -1) {
             map.putInt("status", status);
         }
-        bleManager.emitOnDisconnectPeripheral(map);
+        reactContext
+            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+            .emit("onDisconnectPeripheral", map);
         Log.d(BleManager.LOG_TAG, "Peripheral disconnected:" + device.getAddress());
     }
 
@@ -462,7 +471,9 @@ public class Peripheral extends BluetoothGattCallback {
                 map.putString("characteristic", charString);
                 map.putString("service", service);
                 map.putArray("value", BleManager.bytesToWritableArray(dataValue));
-                bleManager.emitOnDidUpdateValueForCharacteristic(map);
+                reactContext
+                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit("onDidUpdateValueForCharacteristic", map);
 
                 // Check if rest exists. If so it needs to be added to the clean buffer
                 dataValue = rest;
